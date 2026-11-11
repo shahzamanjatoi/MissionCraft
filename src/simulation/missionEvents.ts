@@ -64,14 +64,14 @@ export function applyMissionEvent(
 export function changeLoadMode(
   state: MissionState,
   mode: "full" | "essential-only",
-  essentialLoadW: number
+  essentialLoadW: number,
+  fullLoadW: number
 ): MissionState {
   return {
     ...state,
     loadMode: mode,
-    loadW:
-      mode === "essential-only"
-        ? essentialLoadW
-        : state.loadW,
+    loadW: mode === "essential-only"
+      ? essentialLoadW
+      : fullLoadW,
   };
 }
