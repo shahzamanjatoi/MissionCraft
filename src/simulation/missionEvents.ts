@@ -1,4 +1,3 @@
-
 import type { MissionState } from "../types/simulation";
 
 export type MissionEventType =
@@ -18,9 +17,11 @@ export function applyMissionEvent(
   state: MissionState,
   event: MissionEvent
 ): MissionState {
-  const eventsTriggered = state.eventsTriggered.includes(event.id)
-    ? state.eventsTriggered
-    : [...state.eventsTriggered, event.id];
+  if (state.eventsTriggered.includes(event.id)) {
+    return state;
+  }
+
+  const eventsTriggered = [...state.eventsTriggered, event.id];
 
   switch (event.type) {
     case "eclipse-start": {
@@ -52,10 +53,9 @@ export function applyMissionEvent(
     case "communication-restored":
       return {
         ...state,
-        phase:
-          state.phase === "communication"
-            ? "operations"
-            : state.phase,
+        phase: state.phase === "communication"
+          ? "operations"
+          : state.phase,
         eventsTriggered,
       };
   }
