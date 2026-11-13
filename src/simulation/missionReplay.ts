@@ -9,6 +9,7 @@ import type { MissionEvent } from "./missionEvents";
 import { createInitialMissionState } from "./missionController";
 import { applyMissionEvent } from "./missionEvents";
 import { applyMissionControlDecision } from "./missionControl";
+import { advanceMissionTime } from "./missionSimulation";
 
 export interface MissionReplayResult {
   state: MissionState;
@@ -20,22 +21,30 @@ export function replayMission(
   events: MissionEvent[],
   decisions: MissionDecision[]
 ): MissionReplayResult {
-  const state = createInitialMissionState(snapshot);
-  let currentState = state;
+  let currentState = createInitialMissionState(snapshot);
 
   const decisionsByEvent = new Map<string, MissionDecision>();
 
   for (const decision of decisions) {
     if (decisionsByEvent.has(decision.eventId)) {
-      throw new Error(
-        `Duplicate decision for event: ${decision.eventId}`
-      );
+      throw new Error(`Duplicate decision for event: ${decision.eventId}`);
+    }
+
+    if (
+      !Number.isFinite(decision.missionTimeSeconds) ||
+      decision.missionTimeSeconds < 0
+    ) {
+      throw new Error("Invalid decision mission time.");
     }
 
     decisionsByEvent.set(decision.eventId, decision);
   }
 
   const eventIds = new Set(events.map((event) => event.id));
+
+  if (eventIds.size !== events.length) {
+    throw new Error("Duplicate event IDs in replay.");
+  }
 
   for (const decision of decisions) {
     if (!eventIds.has(decision.eventId)) {
@@ -48,12 +57,23 @@ export function replayMission(
   for (const event of events) {
     const decision = decisionsByEvent.get(event.id);
 
-    // Apply the recorded choice before the event's effects.
     if (decision) {
-      currentState = {
-        ...currentState,
-        elapsedSeconds: decision.missionTimeSeconds,
-      };
+      if (decision.missionTimeSeconds < currentState.elapsedSeconds) {
+        throw new Error("Mission decisions must be chronological.");
+      }
+
+      const duration = decision.missionTimeSeconds -
+        currentState.elapsedSeconds;
+
+      if (duration > 0) {
+        currentState = advanceMissionTime(
+          currentState,
+          snapshot,
+          { durationSeconds: duration }
+        );
+      }
+
+      if (currentState.phase === "failed") break;
 
       currentState = applyMissionControlDecision(
         currentState,
@@ -67,6 +87,8 @@ export function replayMission(
     }
 
     currentState = applyMissionEvent(currentState, event);
+
+    if (currentState.phase === "failed") break;
   }
 
   return {
@@ -74,3 +96,4 @@ export function replayMission(
     eventSeed: snapshot.eventSeed,
   };
 }
+

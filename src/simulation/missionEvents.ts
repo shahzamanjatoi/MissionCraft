@@ -1,4 +1,3 @@
-
 import type { MissionState } from "../types/simulation";
 
 export type MissionEventType =
@@ -18,7 +17,6 @@ export function applyMissionEvent(
   state: MissionState,
   event: MissionEvent
 ): MissionState {
-  // Prevent the same event from being applied more than once.
   if (state.eventsTriggered.includes(event.id)) {
     return state;
   }
@@ -55,10 +53,9 @@ export function applyMissionEvent(
     case "communication-restored":
       return {
         ...state,
-        phase:
-          state.phase === "communication"
-            ? "operations"
-            : state.phase,
+        phase: state.phase === "communication"
+          ? "operations"
+          : state.phase,
         eventsTriggered,
       };
   }
