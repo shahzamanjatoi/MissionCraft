@@ -18,9 +18,12 @@ export function applyMissionEvent(
   state: MissionState,
   event: MissionEvent
 ): MissionState {
-  const eventsTriggered = state.eventsTriggered.includes(event.id)
-    ? state.eventsTriggered
-    : [...state.eventsTriggered, event.id];
+  // Prevent the same event from being applied more than once.
+  if (state.eventsTriggered.includes(event.id)) {
+    return state;
+  }
+
+  const eventsTriggered = [...state.eventsTriggered, event.id];
 
   switch (event.type) {
     case "eclipse-start": {

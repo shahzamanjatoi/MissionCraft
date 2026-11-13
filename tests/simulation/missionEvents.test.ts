@@ -117,4 +117,22 @@ describe("Mission Events", () => {
     expect(result.loadMode).toBe("full");
     expect(result.loadW).toBe(100);
   });
+
+  it("does not apply the same event twice", () => {
+    const event = {
+      id: "eclipse-duplicate",
+      type: "eclipse-start" as const,
+      description: "Moon blocks sunlight",
+      durationSeconds: 3600,
+    };
+
+    const firstResult = applyMissionEvent(initialState, event);
+    const secondResult = applyMissionEvent(firstResult, event);
+
+    expect(firstResult.batteryWh).toBe(400);
+    expect(secondResult.batteryWh).toBe(400);
+    expect(secondResult.eventsTriggered).toEqual([
+      "eclipse-duplicate",
+    ]);
+  });
 });
